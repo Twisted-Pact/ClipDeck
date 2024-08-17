@@ -9,6 +9,7 @@ ClipDeck is an [AutoHotkey](https://www.autohotkey.com/) (v1.1) clipboard manage
 - **Win+b**: Paste from clipdeck, but without removing the pasted item, allowing it to be pasted multiple times.
 - **Control+Win+v**: Pastes all clipdeck entries, each as its own paragraph.
 - **Win+`** (Backtick, the key about Tab on most keyboards): Empties the entire deck, as the Clear Deck GUI button.
+- **Win+Alt+v**: Re-pastes the last clipdeck paste, in case it glitched and didn't paste, or if the deck was accidentally cleared with the Clear Deck button/hotkey.
 
 ## GUI Window Buttons
 - **Clear Deck**: Empties the entire deck.
