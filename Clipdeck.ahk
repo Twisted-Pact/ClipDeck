@@ -179,7 +179,7 @@ ClipdeckInitialize()
 	Gui, Clipdeck:Add, Button,, Clear Deck
 	Gui, Clipdeck:Add, Button, hidden, Spacer
 	Gui, Clipdeck:Add, Button,, Split
-	Gui, Clipdeck:Add, Button, default, Skip
+	Gui, Clipdeck:Add, Button, default, Drop
 	loc := "X0 Y0" ;Initially positions the GUI at the top left of the screen
 	ClipdeckAdd(Clipboard, loc)
 	LV_Modify(1, "Select") ;Selects the first/only item in Clipdeck
@@ -277,8 +277,8 @@ ClipdeckButtonSplit:
 	Return
 }
 
-ClipdeckButtonSkip:
-;Drops the next/selected item from the Clipdeck
+ClipdeckButtonDrop:
+;Removes the next/selected item from the Clipdeck
 {
 	ClipdeckRemove()
 	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/"LV_GetCount()")"
@@ -371,18 +371,33 @@ ClipdeckPasteAll()
 }
 
 #1::
+#Numpad1::
 #2::
+#Numpad2::
 #3::
+#Numpad3::
 #4::
+#Numpad4::
 #5::
+#Numpad5::
 #6::
+#Numpad6::
 #7::
+#Numpad7::
 #8::
+#Numpad8::
 #9::
+#Numpad9::
+#0::
+#Numpad0::
 ;Pastes the Clipdeck item at the list position of the hotkey number
 {
 	Gui Clipdeck:Default
-	paste_num := StrReplace(A_ThisHotkey, "#") ;Gets the number used in the hotkey
+	paste_num := SubStr(A_ThisHotkey, 0) ;Gets the number used in the hotkey
+	If paste_num = 0
+	{
+		paste_num := 10
+	}
 	LV_Modify(paste_num, "Select") ;Selects that item in the list
 	ClipdeckRetrieve() ;Gets that item to paste
 	Send ^v ;Pastes
