@@ -287,6 +287,10 @@ ClipdeckButtonDrop:
 {
 	ClipdeckRemove()
 	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/"LV_GetCount()")"
+	WinActive("Next line")
+	WinGetPos, WinX, WinY, WinWidth, WinHeight ;Gets dimensions of window
+	WinWidth := WinWidth-25
+	Gui, Clipdeck: Show, W%WinWidth% NoActivate ;Prevents AutoSize from continually increasing the width
 	ClipdeckDestroyCheck()
 	Return
 }
@@ -297,7 +301,7 @@ ClipdeckButtonClearDeck:
 	count := LV_GetCount()
 	Loop, %count%
 	{
-		LV_GetText(line_text, count, 2) ;Retrieves the selected row's text
+		LV_GetText(line_text, A_Index, 2) ;Retrieves the selected row's text
 		all_lines := all_lines . line_text . A_Return ;Concatenates to previous rows
 	}
 	ClipdeckRecall := all_lines
@@ -367,7 +371,7 @@ ClipdeckPasteAll()
 	Return
 }
 
-!#v::
+#`::
 ;Clipdeck paste last item
 {
 	Clip(ClipdeckRecall)
@@ -388,6 +392,10 @@ ClipdeckPasteAll()
 	ClipdeckRecall := Clipboard
 	ClipRestore()
 	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/" . LV_GetCount() . ")" ;Updates the GUI
+	WinActive("Next line")
+	WinGetPos, WinX, WinY, WinWidth, WinHeight ;Gets dimensions of window
+	WinWidth := WinWidth-25
+	Gui, Clipdeck: Show, W%WinWidth% NoActivate ;Prevents AutoSize from continually increasing the width
 	ClipdeckDestroyCheck() ;Destroys the GUI if Clipdeck is empty
 	Return
 }
@@ -450,7 +458,7 @@ ClipdeckPasteAll()
 	Return
 }
 
-#`::Goto, ClipdeckButtonClearDeck ;Clears the entire deck
+#z::Goto, ClipdeckButtonClearDeck ;Clears the entire deck
 
 }
 
