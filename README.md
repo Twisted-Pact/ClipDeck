@@ -1,5 +1,5 @@
 # ClipDeck Clipboard Manager
-ClipDeck is an AutoHotkey clipboard manager that works alongside the normal Windows clipboard, letting you copy multiple items to a GUI window and paste them in any order.
+ClipDeck is an [AutoHotkey](https://www.autohotkey.com/) (v1.1) clipboard manager that works alongside the normal Windows clipboard, letting you copy multiple items to a GUI window and paste them in any order.
 
 
 ## Hotkeys
