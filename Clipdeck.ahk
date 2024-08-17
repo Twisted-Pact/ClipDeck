@@ -7,25 +7,41 @@ SendMode Input ;Makes Send synonymous with SendInput
 #UseHook On ;Helps ensure modifier keys don't remain pressed after hotkey ends
 OnClipboardChange("ClipChanged")
 
+ 
+;VARIABLES=====================================================================
 
-;VARIABLES====================================================================
 
 Global A_Return := "`r`n"
 Global ClipChange :=
-Global Clipdeck := []
-Global ClipdeckNextLine
 Global ClipSave
 
 
-;FUNCTIONS====================================================================
+Global Clipdeck := []
+Global ClipdeckNextLine
+Global ClipdeckRecall
 
-Clip(cliptext, duration:=1, displaytext:="Oops")
-;Sends cliptext to the clipboard, then waits for it to be received before the script continues
+
+;FUNCTIONS=====================================================================
+
+ClipDeckCopy(mode, duration:=1, displaytext:="Oops")
 {
 	ClipSave() ;Saves the existing clipboard for later restoration
 	ClipChange := ;Tracks when the clipboard actually receives cliptext
+	If (mode = "copy")
+	{
+		Send {Ctrl Down}c{Ctrl Up}
+	}
+	Else if (mode = "cut")
+	{
+		Send {Ctrl Down}x{Ctrl Up}
+	}
+	Else
+	{
+		Tip(displaytext)
+		Send {Alt Up}
+		Exit
+	}
 	cycle := 0
-	Clipboard := cliptext
 	Loop ;Waits for the clipboard to receive cliptext before proceeding
 	{
 		If (ClipChange = True)
@@ -38,140 +54,124 @@ Clip(cliptext, duration:=1, displaytext:="Oops")
 		If (cycle > duration) ;Timeout
 		{
 			Tip(displaytext)
+			Send {Alt Up}
 			Exit
 		}
 	}
+	clipText := Clipboard
+	ClipRestore()
 }
 
-CopyClip(duration:=1, displaytext:="Oops")
-;Copies selected text, then waits for it to be received before the script continues
-{
-	ClipSave() ;Saves the existing clipboard for later restoration
-	ClipChange := ;Tracks when the clipboard actually receives cliptext
-	cycle := 0
-	Send {Ctrl Down}c{Ctrl Up} ;I've had bad luck with modifier keys staying stuck down, so I explicitly use {Ctrl Down}/{Up} instread of ^c
-	Loop ;Waits for the clipboard to receive cliptext before proceeding
+
+
+	Clip(cliptext, duration:=1, displaytext:="Oops")
+	;Sends cliptext to the clipboard, then waits for it to be received before the script continues
 	{
-		If (ClipChange = True)
+		ClipSave() ;Saves the existing clipboard for later restoration
+		ClipChange := ;Tracks when the clipboard actually receives cliptext
+		cycle := 0
+		Clipboard := cliptext
+		Loop ;Waits for the clipboard to receive cliptext before proceeding
 		{
-			ClipChange := ;Resets ClipChange on success
-			Return
-		}
-		cycle := cycle+.1
-		Sleep 15
-		If (cycle > duration) ;Timeout
-		{
-			Tip(displaytext)
-			Exit
+			If (ClipChange = True)
+			{
+				ClipChange := ;Resets ClipChange on success
+				Return
+			}
+			cycle := cycle+.1
+			Sleep 15
+			If (cycle > duration) ;Timeout
+			{
+				Tip(displaytext)
+				Send {Alt Up}
+				Exit
+			}
 		}
 	}
-}
 
-CutClip(duration:=1, displaytext:="Oops")
-;Cuts selected text, then waits for it to be received before the script continues
-{
-	ClipSave() ;Saves the existing clipboard for later restoration
-	ClipChange := ;Tracks when the clipboard actually receives cliptext
-	cycle := 0
-	Send {Ctrl Down}x{Ctrl Up} ;I've had bad luck with modifier keys staying stuck down, so I explicitly use {Ctrl Down}/{Up} instread of ^x
-	Loop ;Waits for the clipboard to receive cliptext before proceeding
+	ClipChanged()
+	;Tells Clip(), CopyClip(), and CutClip() when the clipboard has received new text
 	{
-		If (ClipChange = True)
+		ClipChange := True
+	}
+
+	ClipSave(duration:=1)
+	;Stores the current clipboard for later restoration
+	{
+		ClipChange :=
+		cycle := 0
+		ClipSave := Clipboard
+		Clipboard :=
+		Loop
 		{
-			ClipChange := ;Resets ClipChange on success
-			Return
-		}
-		cycle := cycle+.1
-		Sleep 25
-		If (cycle > duration) ;Timeout
-		{
-			Exit
+			If (ClipChange = True) ;Waits for the clipboard to actually register a change before continuing
+			{
+				ClipChange := ;Resets ClipChange on success
+				Return
+			}
+			cycle := cycle+.1
+			Sleep 25
+			If (cycle > duration) ;Timeout
+			{
+				Send {Alt Up}
+				Exit
+			}
 		}
 	}
-}
 
-ClipChanged()
-;Tells Clip(), CopyClip(), and CutClip() when the clipboard has received new text
-{
-	ClipChange := True
-}
-
-ClipSave(duration:=1)
-;Stores the current clipboard for later restoration
-{
-	ClipChange :=
-	cycle := 0
-	ClipSave := Clipboard
-	Clipboard :=
-	Loop
+	ClipRestore(duration:=1)
+	;Restores the saved clipboard from ClipSave
 	{
-		If (ClipChange = True) ;Waits for the clipboard to actually register a change before continuing
+		Sleep 200 ;To prevent restoring the clipboard before the previous line has finished pasting
+		ClipChange :=
+		cycle := 0
+		ClipBoard := ClipSave ;Restores the saved clipboard
+		Loop ;Waits for the clipboard to receive ClipSave before proceeding
 		{
-			ClipChange := ;Resets ClipChange on success
-			Return
-		}
-		cycle := cycle+.1
-		Sleep 25
-		If (cycle > duration) ;Timeout
-		{
-			Exit
+			If (ClipChange = True)
+			{
+				ClipChange := ;Resets ClipChange on success
+				;ClipSave :=
+				Return
+			}
+			cycle := cycle+.1
+			Sleep 25
+			If (cycle > duration) ;Timeout
+			{
+				Send {Alt Up}
+				Exit
+			}
 		}
 	}
-}
 
-ClipRestore(duration:=1)
-;Restores the saved clipboard from ClipSave
-{
-	Sleep 200 ;To prevent restoring the clipboard before the previous line has finished pasting
-	ClipChange :=
-	cycle := 0
-	ClipBoard := ClipSave ;Restores the saved clipboard
-	Loop ;Waits for the clipboard to receive ClipSave before proceeding
+	Tip(tiptext)
+	;Displays a tooltip for 2 seconds
 	{
-		If (ClipChange = True)
+		Tooltip, %tiptext%
+		SetTimer, RemoveToolTip, -2000
+	}
+
+	RemoveToolTip:
+	;Clears the current tooltip
+		ToolTip
+	Return
+
+	ArrayTrim(An_array)
+	;Removes empty values from an array
+	{
+		for index, value in an_array
 		{
-			ClipChange := ;Resets ClipChange on success
-			ClipSave :=
-			Return
-		}
-		cycle := cycle+.1
-		Sleep 25
-		If (cycle > duration) ;Timeout
-		{
-			Exit
+			if (value = "")
+			{
+				an_array.RemoveAt(index)
+			}
 		}
 	}
-}
-
-Tip(tiptext)
-;Displays a tooltip for 2 seconds
-{
-	Tooltip, %tiptext%
-	SetTimer, RemoveToolTip, -2000
-}
-
-RemoveToolTip:
-;Clears the current tooltip
-	ToolTip
-Return
-
-ArrayTrim(An_array)
-;Removes empty values from an array
-{
-	for index, value in an_array
-	{
-		if (value = "")
-		{
-			an_array.RemoveAt(index)
-		}
-	}
-}
 
 
-;CLIPDECK GUI====================================================================
+{ ;CLIPDECK GUI=========================================================
 
 ClipdeckInitialize()
-;Creates the initial Clipdeck GUI window
 {
 	Gui, new, , Clipdeck
 	Gui Clipdeck:-SysMenu Resize -MaximizeBox +AlwaysOnTop +Owner +MinSize  ;-SysMenu omits title bar; Resize makes the window resizable, but adds the Maximize button back; -MaximizeBox removes it again; +Owner avoids a taskbar button
@@ -180,13 +180,16 @@ ClipdeckInitialize()
 	Gui, Clipdeck:Add, Button, hidden, Spacer
 	Gui, Clipdeck:Add, Button,, Split
 	Gui, Clipdeck:Add, Button, default, Drop
+
+
 	loc := "X0 Y0" ;Initially positions the GUI at the top left of the screen
+
+	
 	ClipdeckAdd(Clipboard, loc)
 	LV_Modify(1, "Select") ;Selects the first/only item in Clipdeck
 }
 
 ClipdeckGuiSize:
-;Resizes the GUI
 {
 	Gui Clipdeck:Default
 	GuiControl, Move, ClipdeckNextLine, % "w"A_GuiWidth-75 "h"A_GuiHeight-60
@@ -207,15 +210,17 @@ ClipdeckAdd(LineText, loc:="")
 	LV_height = % (row_count*18)+44
 	pane_height := % (LV_height)+60
 	GuiControl, Move, ClipdeckNextLine, H%LV_height%
-	Gui, Clipdeck:Show, NoActivate %loc% H%pane_height%, % "Next line (1/"LV_GetCount()")" ;ClipdeckInitialize will provide a loc that positions the window; any subsequent calls of ClipdeckAdd will have a blank loc so as not to reposition a window that may have been moved by the user
+	Gui, Clipdeck:Show, NoActivate %loc% H%pane_height%, % "Next line (1/"LV_GetCount()")" ;ClipdeckInitialize will provide a loc that positions the window; any subsequent calls of ClipdeckAdd will have a blank loc so as not to reposition a window that may have been moved
 	ClipRestore()
+	Return
 }
+
 
 ClipdeckRetrieve()
 ;Returns the selected row text to be pasted
 {
 	Gui Clipdeck:Default
-	If (LV_GetNext() = 0) ;If no row is selected, selects the first
+	If (LV_GetNext() = 0)
 	{
 		LV_Modify(1, "Select")
 	}
@@ -289,6 +294,13 @@ ClipdeckButtonDrop:
 ClipdeckButtonClearDeck:
 ;Clears the entire deck
 {
+	count := LV_GetCount()
+	Loop, %count%
+	{
+		LV_GetText(line_text, count, 2) ;Retrieves the selected row's text
+		all_lines := all_lines . line_text . A_Return ;Concatenates to previous rows
+	}
+	ClipdeckRecall := all_lines
 	Gui, Clipdeck:Destroy
 	ClipRestore()
 	Return
@@ -299,7 +311,6 @@ ClipdeckPasteAll()
 {
 	
 	Gui Clipdeck:Default
-	message := ""
 	count := LV_GetCount()
 	Loop, %count%
 	{
@@ -314,6 +325,7 @@ ClipdeckPasteAll()
 	}
 	Clip(all_lines)
 	Send ^v
+	ClipdeckRecall := all_lines
 	Gui, Clipdeck:Destroy
 	LV_Delete()
 	ClipRestore()
@@ -326,7 +338,7 @@ ClipdeckPasteAll()
 #c::
 ;Clipdeck copy
 {
-	CopyClip(2, "No text selected") ;Copies selected text
+	ClipDeckCopy("copy", 2, "No text selected") ;Copies selected text
 	If not WinExist("Next line (1") ;Creates the Clipdeck GUI if it doesn't already exist
 	{
 		ClipdeckInitialize()
@@ -335,14 +347,14 @@ ClipdeckPasteAll()
 	{
 		ClipdeckAdd(ClipBoard)
 	}
-	ClipRestore() ;Restores the previous clipboard
+	;ClipRestore() ;Restores the previous clipboard
 	Return
 }
 
 #x::
 ;Clipdeck cut
 {
-	CutClip(2, "No text selected") ;Copies selected text
+	ClipDeckCopy("cut", 2, "No text selected") ;Copies selected text
 	If not WinExist("Next line (1") ;Creates the Clipdeck GUI if it doesn't already exist
 	{
 		ClipdeckInitialize()
@@ -351,10 +363,18 @@ ClipdeckPasteAll()
 	{
 		ClipdeckAdd(ClipBoard)
 	}
-	ClipRestore() ;Restores the previous clipboard
+	;ClipRestore() ;Restores the previous clipboard
 	Return
 }
 
+!#v::
+;Clipdeck paste last item
+{
+	Clip(ClipdeckRecall)
+	Send ^v
+	ClipRestore()
+	Return
+}
 
 #IfWinExist Next line (1/
 ;Paste hotkeys only work if the Clipdeck GUI window exists
@@ -365,6 +385,8 @@ ClipdeckPasteAll()
 	ClipdeckRetrieve() ;Gets the next item to paste
 	ClipdeckRemove() ;Removes that item from Clipdeck
 	Send ^v ;Pastes
+	ClipdeckRecall := Clipboard
+	ClipRestore()
 	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/" . LV_GetCount() . ")" ;Updates the GUI
 	ClipdeckDestroyCheck() ;Destroys the GUI if Clipdeck is empty
 	Return
@@ -401,6 +423,8 @@ ClipdeckPasteAll()
 	LV_Modify(paste_num, "Select") ;Selects that item in the list
 	ClipdeckRetrieve() ;Gets that item to paste
 	Send ^v ;Pastes
+	ClipdeckRecall := Clipboard
+	ClipRestore()
 	LV_Modify(paste_num+1, "Select") ;Selects the next item in the list
 	Return
 }
@@ -411,6 +435,8 @@ ClipdeckPasteAll()
 	Gui Clipdeck:Default
 	ClipdeckRetrieve() ;Gets the next item to paste
 	Send ^v ;Pastes
+	ClipdeckRecall := Clipboard
+	ClipRestore()
 	row_number := LV_GetNext() ;Gets the list number of the next item
 	LV_Modify(row_number, "-Select") ;Deselecting allows this to loop at the end of the list
 	LV_Modify(row_number+1, "Select") ;Selects the next item for the next paste
@@ -421,7 +447,10 @@ ClipdeckPasteAll()
 ;Paste all
 {
 	ClipdeckPasteAll()
+	Return
 }
 
 #`::Goto, ClipdeckButtonClearDeck ;Clears the entire deck
+
+}
 
