@@ -147,7 +147,7 @@ Tip(tiptext)
 ;Displays a tooltip for 2 seconds
 {
 	Tooltip, %tiptext%
-	;SetTimer, RemoveToolTip, -2000
+	SetTimer, RemoveToolTip, -2000
 }
 
 RemoveToolTip:
