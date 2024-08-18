@@ -433,7 +433,6 @@ ClipdeckPasteAll()
 	Send ^v ;Pastes
 	ClipdeckRecall := Clipboard
 	ClipRestore()
-	LV_Modify(paste_num+1, "Select") ;Selects the next item in the list
 	Return
 }
 
@@ -448,8 +447,13 @@ ClipdeckPasteAll()
 	row_number := LV_GetNext() ;Gets the list number of the next item
 	LV_Modify(row_number, "-Select") ;Deselecting allows this to loop at the end of the list
 	LV_Modify(row_number+1, "Select") ;Selects the next item for the next paste
+	If (row_number = LV_GetCount()) ;Loops around to the beginning of the list
+	{
+		LV_Modify(1, "Select")
+	}
 	Return
 }
+
 
 ^#v::
 ;Paste all
