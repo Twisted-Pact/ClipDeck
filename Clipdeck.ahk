@@ -241,11 +241,15 @@ ClipdeckRemove()
 	this_row := LV_GetNext()
 	LV_Delete(this_row) ;Deletes selected row
 	LV_Modify(this_row, "Select") ;Selects the next row, which now has the position number of the row we just deleted
-	count := LV_GetCount()
-	Loop, %count%
+	row_count := LV_GetCount()
+	Loop, %row_count%
 	{
 		LV_Modify(A_Index, Col1, A_Index) ;Updates Win# for remaining rows
 	}
+	LV_height = % (row_count*18)+44
+	pane_height := % (LV_height)+60
+	GuiControl, Move, ClipdeckNextLine, H%LV_height%
+	Gui, Clipdeck:Show, NoActivate H%pane_height%, % "Next line (1/"LV_GetCount()")" ;ClipdeckInitialize will provide a loc that positions the window; any subsequent calls of ClipdeckAdd will have a blank loc so as not to reposition a window that may have been moved
 }
 
 ClipdeckDestroyCheck()
@@ -286,11 +290,6 @@ ClipdeckButtonDrop:
 ;Removes the next/selected item from the Clipdeck
 {
 	ClipdeckRemove()
-	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/"LV_GetCount()")"
-	WinActive("Next line")
-	WinGetPos, WinX, WinY, WinWidth, WinHeight ;Gets dimensions of window
-	WinWidth := WinWidth-25
-	Gui, Clipdeck: Show, W%WinWidth% NoActivate ;Prevents AutoSize from continually increasing the width
 	ClipdeckDestroyCheck()
 	Return
 }
@@ -391,14 +390,10 @@ ClipdeckPasteAll()
 	Send ^v ;Pastes
 	ClipdeckRecall := Clipboard
 	ClipRestore()
-	Gui, Clipdeck:Show, AutoSize NoActivate, % "Next line (1/" . LV_GetCount() . ")" ;Updates the GUI
-	WinActive("Next line")
-	WinGetPos, WinX, WinY, WinWidth, WinHeight ;Gets dimensions of window
-	WinWidth := WinWidth-25
-	Gui, Clipdeck: Show, W%WinWidth% NoActivate ;Prevents AutoSize from continually increasing the width
 	ClipdeckDestroyCheck() ;Destroys the GUI if Clipdeck is empty
 	Return
 }
+
 
 #1::
 #Numpad1::
